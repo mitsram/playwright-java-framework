@@ -1,0 +1,9 @@
+Root cause: Playwright is not thread-safe — the testng.xml had parallel="classes" thread-count="2", but BaseUITest and BaseAPITest shared a single static Playwright + Browser instance across all threads via @BeforeSuite/@AfterSuite. Multiple threads hitting the same Playwright connection caused "Cannot find object" and NullPointerException errors.
+
+Changes made:
+
+BaseUITest.java — Changed from @BeforeSuite/@AfterSuite with static fields to @BeforeClass/@AfterClass with instance fields. Each test class now gets its own Playwright+Browser lifecycle. Added null guards and try/catch in teardown to prevent cascading failures.
+
+BaseAPITest.java — Same pattern: @BeforeSuite/@AfterSuite → @BeforeClass/@AfterClass, static → instance fields.
+
+PetStoreApiTest.java — testDeletePet now depends on testVerifyPetUpdated instead of testCreatePet, so the verify step runs before the pet gets deleted (previously it was getting a 404 because delete ran first).
